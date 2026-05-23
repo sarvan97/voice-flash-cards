@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flash Cards — Voice Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --ink: #0f172a;
+    --ink-soft: #475569;
+    --muted: #94a3b8;
+    --line: #e2e8f0;
+    --accent: #4f46e5;
+    --accent-dark: #4338ca;
+    --accent-soft: #eef2ff;
+    --good: #047857;
+    --good-soft: #d1fae5;
+    --bad: #b91c1c;
+    --bad-soft: #fee2e2;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 4px 12px rgba(79, 70, 229, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 16px 40px rgba(79, 70, 229, 0.12), 0 4px 12px rgba(15, 23, 42, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 64px;
+  }
+
+  /* Header */
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800; font-size: 14px;
+    box-shadow: var(--shadow-md);
+  }
+  .brand-name { font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px; letter-spacing: -0.01em; }
+  .header-right { font-size: 13px; color: var(--muted); }
+
+  /* Screens */
+  .screen { animation: fadeIn 280ms ease-out; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Home */
+  .hero { margin-bottom: 32px; }
+  .hero h1 {
+    font-family: 'Fraunces', serif; font-weight: 700;
+    font-size: 40px; letter-spacing: -0.02em; line-height: 1.1;
+    margin: 0 0 12px;
+  }
+  .hero p { color: var(--ink-soft); margin: 0; font-size: 17px; max-width: 520px; }
+
+  .modes { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 560px) { .modes { grid-template-columns: 1fr 1fr; } }
+
+  .mode {
+    text-align: left; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 22px 24px;
+    transition: transform 160ms ease, box-shadow 200ms ease, border-color 160ms ease;
+    box-shadow: var(--shadow-sm);
+    font-family: inherit; color: inherit;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .mode:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: #c7d2fe; }
+  .mode:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .mode-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--accent-soft); color: var(--accent-dark);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+  }
+  .mode-icon svg { width: 20px; height: 20px; }
+  .mode-title { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
+  .mode-desc { color: var(--ink-soft); font-size: 14px; }
+  .mode-meta { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-top: 4px; }
+
+  /* Quiz */
+  .quiz-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .back-btn {
+    background: transparent; border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 14px; font-size: 13px; color: var(--ink-soft); cursor: pointer;
+    font-family: inherit;
+    transition: background 140ms ease, color 140ms ease;
+  }
+  .back-btn:hover { background: var(--surface); color: var(--ink); }
+  .quiz-title { font-weight: 600; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .score-pill {
+    margin-left: auto;
+    background: var(--accent-soft); color: var(--accent-dark);
+    padding: 6px 14px; border-radius: 999px;
+    font-weight: 600; font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line); border-radius: 20px;
+    padding: 36px 28px; text-align: center;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 18px;
+    transition: border-color 240ms ease, box-shadow 240ms ease;
+  }
+  .card.flash-good { border-color: var(--good); box-shadow: 0 0 0 4px var(--good-soft), var(--shadow-md); }
+  .card.flash-bad  { border-color: var(--bad);  box-shadow: 0 0 0 4px var(--bad-soft),  var(--shadow-md); }
+
+  .card-image {
+    width: 100%; height: 220px;
+    background: #f1f5f9; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px; overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .card-image img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .card-image.cover img { width: 100%; height: 100%; object-fit: cover; }
+  .card-image[hidden] { display: none; }
+
+  .card-label {
+    font-family: 'Fraunces', serif; font-weight: 700;
+    font-size: 32px; letter-spacing: -0.01em; line-height: 1.15;
+    color: var(--ink);
+  }
+  .card-label.small { font-size: 22px; }
+  .card-sub { margin-top: 10px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+
+  /* Progress */
+  .progress {
+    height: 6px; background: var(--line); border-radius: 999px; overflow: hidden;
+    margin-bottom: 18px;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), #7c3aed);
+    width: 0%; transition: width 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Controls */
+  .controls { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .btn {
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    padding: 10px 18px; border: 0; border-radius: 999px; cursor: pointer;
+    transition: transform 100ms ease, box-shadow 160ms ease, background 140ms ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: white; box-shadow: var(--shadow-md); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+  .btn-ghost:hover:not(:disabled) { background: var(--surface); color: var(--ink); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .status { font-size: 12px; color: var(--muted); margin-left: auto; text-transform: lowercase; letter-spacing: 0.04em; }
+
+  /* Log */
+  .log {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px 16px; max-height: 36vh; overflow-y: auto;
+    font-size: 14px;
+  }
+  .log:empty::before { content: "Conversation will appear here…"; color: var(--muted); font-style: italic; }
+  .turn { margin: 6px 0; line-height: 1.5; }
+  .turn .who { font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .turn.agent .who { color: var(--accent-dark); }
+  .turn.user .who { color: var(--good); }
+  .turn.sys { color: var(--muted); font-size: 12px; font-style: italic; }
+
+  .hidden { display: none !important; }
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 700ms linear infinite; display: inline-block;
+    vertical-align: middle; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="header">
+    <div class="brand">
+      <div class="brand-mark">FC</div>
+      <div class="brand-name">Flash Cards</div>
+    </div>
+    <div class="header-right">Voice quiz · ten per round</div>
+  </header>
+
+  <!-- HOME SCREEN -->
+  <section id="home" class="screen">
+    <div class="hero">
+      <h1>Pick a quiz, then talk back.</h1>
+      <p>Press a card to start. You'll see ten questions and answer each one out loud.</p>
+    </div>
+    <div class="modes">
+      <button class="mode" data-mode="capitals">
+        <div class="mode-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+        </div>
+        <div class="mode-title">World Capitals</div>
+        <div class="mode-desc">Name the capital city of each country.</div>
+        <div class="mode-meta">195 countries</div>
+      </button>
+      <button class="mode" data-mode="flags">
+        <div class="mode-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4"/><path d="M4 4h13l-2 4 2 4H4"/></svg>
+        </div>
+        <div class="mode-title">Flags</div>
+        <div class="mode-desc">Look at a flag and name the country.</div>
+        <div class="mode-meta">195 flags</div>
+      </button>
+      <button class="mode" data-mode="breeds">
+        <div class="mode-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="8" r="1.5"/><circle cx="17.5" cy="8" r="1.5"/><circle cx="4" cy="13" r="1.5"/><circle cx="20" cy="13" r="1.5"/><path d="M12 13c-3.5 0-5 2.5-5 5 0 1.5 1 2 2.5 2h5c1.5 0 2.5-.5 2.5-2 0-2.5-1.5-5-5-5z"/></svg>
+        </div>
+        <div class="mode-title">Dog Breeds</div>
+        <div class="mode-desc">Identify the breed from a photo.</div>
+        <div class="mode-meta">49 breeds</div>
+      </button>
+    </div>
+  </section>
+
+  <!-- QUIZ SCREEN -->
+  <section id="quiz" class="screen hidden">
+    <div class="quiz-bar">
+      <button class="back-btn" id="backBtn">← Modes</button>
+      <span class="quiz-title" id="quizTitle">—</span>
+      <span class="score-pill" id="score">0 / 10</span>
+    </div>
+
+    <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="card" id="card">
+      <div class="card-image" id="cardImage" hidden><img id="cardImg" alt=""></div>
+      <div class="card-label" id="cardLabel">Loading…</div>
+      <div class="card-sub" id="cardSub">Connecting</div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="startBtn">Start</button>
+      <button class="btn btn-ghost" id="stopBtn" disabled>End session</button>
+      <span class="status" id="status">idle</span>
+    </div>
+
+    <div class="log" id="log"></div>
+  </section>
+</div>
+
+<script>
+// ============================================================================
+// Constants
+// ============================================================================
+const RATE = 24000;
+const ROUND_SIZE = 10;
+
+// ============================================================================
+// DOM
+// ============================================================================
+const $ = (id) => document.getElementById(id);
+const homeEl = $("home");
+const quizEl = $("quiz");
+const startBtn = $("startBtn");
+const stopBtn = $("stopBtn");
+const backBtn = $("backBtn");
+const statusEl = $("status");
+const scoreEl = $("score");
+const logEl = $("log");
+const cardEl = $("card");
+const cardImageWrap = $("cardImage");
+const cardImg = $("cardImg");
+const cardLabel = $("cardLabel");
+const cardSub = $("cardSub");
+const progressFill = $("progressFill");
+const quizTitleEl = $("quizTitle");
+
+// ============================================================================
+// Data
+// ============================================================================
+let COUNTRIES = [];
+let BREEDS = [];
+
+const dataReady = Promise.all([
+  fetch("countries.json").then(r => r.json()).then(d => { COUNTRIES = d; }),
+  fetch("breeds.json").then(r => r.json()).then(d => { BREEDS = d; }),
+]).catch(err => log("system", "Could not load data: " + err.message, "sys"));
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function pickN(arr, n) { return shuffle(arr.slice()).slice(0, n); }
+
+// ============================================================================
+// Modes
+// ============================================================================
+// Each mode defines: title, greeting, prompt builder, round picker (async),
+// card renderer, keyterms hint, and image-fit style.
+const MODES = {
+  capitals: {
+    title: "World Capitals",
+    greeting: "Hi! I'm Atlas, your geography tutor. I'll show you ten flash cards, each with a country — just tell me its capital. Let's begin!",
+    keyterms: (items) => items.map(c => c.capital),
+    pickRound: async () => pickN(COUNTRIES, ROUND_SIZE),
+    render: (item) => ({
+      image: null,
+      label: item.name,
+      sub: "Name the capital",
+      labelSize: "normal",
+    }),
+    buildPrompt: (items) => {
+      const list = items.map((c, i) => `${i + 1}. ${c.name} → ${c.capital}`).join("\n");
+      return `# ROLE
+You are Atlas, a warm and patient geography tutor. You run a spoken 10-question quiz on world capitals.
+
+# THE COUNTRIES FOR THIS ROUND
+Quiz the user on exactly these 10 countries, in this exact order. Do not skip, reorder, or substitute.
+${list}
+
+# PROCEDURE
+1. After your greeting, ask the capital of country 1: "What is the capital of <country 1>?" Use only the country name — never say phrases like "the next country".
+2. Listen to the user's spoken answer and judge it.
+3. Give your verdict (see VERDICT FORMAT) and, in the same reply, ask the capital of the next country on the list.
+4. Continue through all 10 countries in order.
+5. After the 10th answer, follow END OF ROUND.
+
+# VERDICT FORMAT — MANDATORY
+Every reply judging an answer MUST begin with one of these two exact words, with nothing before it:
+- "Correct" — if the answer was right.
+- "Incorrect" — if the answer was wrong, or the user did not know.
+Examples: "Correct — Vienna it is! What is the capital of Norway?" / "Incorrect — the capital of Austria is Vienna. What is the capital of Norway?"
+Never begin any other reply (greeting, repeats, score, wrap-up) with "Correct" or "Incorrect".
+
+# JUDGING
+- Be lenient — speech-to-text may garble answers. Accept clear near-misses.
+- When wrong, always state the correct capital.
+- Say capital names naturally; never spell them out.
+- Warm and encouraging. One or two sentences per turn.
+
+# COMMANDS (NOT answers — do not begin with Correct/Incorrect)
+- "repeat" / "say it again": re-read the current country.
+- "what's my score": tell the user their score is on their screen.
+
+# END OF ROUND
+- After the 10th answer, warmly congratulate the user and tell them their final score is on their screen. Do not state the number yourself.
+- Offer to recap the missed countries with capitals.
+- Ask if they want another round. The list above will refresh — start again from country 1.
+
+# STYLE
+Warm, encouraging, brisk. Spoken — never read lists or markdown.`;
+    },
+  },
+
+  flags: {
+    title: "Flags",
+    greeting: "Hi! I'm Atlas. I'll show you ten flags on your screen — just tell me what country each one belongs to. Ready when you are.",
+    keyterms: (items) => items.map(c => c.name),
+    pickRound: async () => pickN(COUNTRIES, ROUND_SIZE),
+    render: (item) => ({
+      image: `https://flagcdn.com/w640/${item.iso.toLowerCase()}.png`,
+      label: "",
+      sub: "What country is this flag?",
+      labelSize: "normal",
+    }),
+    buildPrompt: (items) => {
+      const list = items.map((c, i) => `${i + 1}. ${c.name}`).join("\n");
+      return `# ROLE
+You are Atlas, a warm and patient quiz host. The user is looking at a series of 10 flag images on their screen, one at a time. You quiz them on what country each flag belongs to. You cannot see the images yourself.
+
+# THE FLAGS FOR THIS ROUND (in the order shown on the user's screen)
+${list}
+
+# PROCEDURE
+1. After your greeting, say something like: "Let's start — what country is this first flag?"
+2. Listen to the user's spoken answer and judge it.
+3. Reply with a verdict and ask about the next flag. Use natural phrasings like "And the next one?", "What about this one?", "Next flag?". Never name the country yourself before they answer — they are looking at the image.
+4. Continue through all 10 flags in order.
+5. After the 10th answer, follow END OF ROUND.
+
+# VERDICT FORMAT — MANDATORY
+Every reply judging an answer MUST begin with one of these two exact words, with nothing before it:
+- "Correct" — if the answer was right.
+- "Incorrect" — if the answer was wrong, or the user did not know.
+Examples: "Correct — that's France! What about the next one?" / "Incorrect — that's the flag of Germany. And the next?"
+Never begin any other reply (greeting, repeats, score, wrap-up) with "Correct" or "Incorrect".
+
+# JUDGING
+- Be lenient. Accept clear near-misses ("the US" = United States, "UK" or "Britain" = United Kingdom, "Holland" = Netherlands, "South Korea" = Korea, Republic of, etc.).
+- When wrong, always state the correct country.
+- Say country names naturally.
+- Warm and encouraging. One or two sentences per turn.
+
+# COMMANDS (NOT answers — do not begin with Correct/Incorrect)
+- "skip" / "I don't know": treat as Incorrect.
+- "what's my score": tell the user their score is on their screen.
+
+# END OF ROUND
+- After the 10th answer, warmly congratulate the user and say the final score is on their screen. Do not state the number yourself.
+- Offer to recap the flags they missed with the country names.
+- Ask if they want another round. The list above will refresh — start over from flag 1.
+
+# STYLE
+Warm, brisk, spoken — never read markdown.`;
+    },
+  },
+
+  breeds: {
+    title: "Dog Breeds",
+    greeting: "Hi! I'm Atlas. I'll show you ten photos of dogs — just tell me each breed. Don't worry if you're not sure, take a guess. Let's go!",
+    keyterms: (items) => items.map(b => b.name),
+    coverImage: true,
+    pickRound: async () => {
+      const picks = pickN(BREEDS, ROUND_SIZE);
+      return await Promise.all(picks.map(async (b) => {
+        try {
+          const r = await fetch(`https://dog.ceo/api/breed/${b.slug}/images/random`);
+          const j = await r.json();
+          return { ...b, image: j.message };
+        } catch {
+          return { ...b, image: "" };
+        }
+      }));
+    },
+    render: (item) => ({
+      image: item.image,
+      label: "",
+      sub: "What breed is this dog?",
+      labelSize: "normal",
+    }),
+    buildPrompt: (items) => {
+      const list = items.map((b, i) => `${i + 1}. ${b.name}`).join("\n");
+      return `# ROLE
+You are Atlas, a warm and patient quiz host. The user is looking at a series of 10 photos of dogs on their screen, one at a time. You quiz them on what breed each dog is. You cannot see the photos yourself.
+
+# THE BREEDS FOR THIS ROUND (in the order shown on the user's screen)
+${list}
+
+# PROCEDURE
+1. After your greeting, say something like: "Let's start — what breed is this first dog?"
+2. Listen to the user's spoken answer and judge it.
+3. Reply with a verdict and ask about the next photo. Use natural phrasings like "And this one?", "What about the next?", "Next dog?". Never name the breed yourself before they answer — they are looking at the image.
+4. Continue through all 10 dogs in order.
+5. After the 10th answer, follow END OF ROUND.
+
+# VERDICT FORMAT — MANDATORY
+Every reply judging an answer MUST begin with one of these two exact words, with nothing before it:
+- "Correct" — if the answer was right.
+- "Incorrect" — if the answer was wrong, or the user did not know.
+Examples: "Correct — that's a Golden Retriever! What about the next?" / "Incorrect — that's a French Bulldog. And this one?"
+Never begin any other reply (greeting, repeats, score, wrap-up) with "Correct" or "Incorrect".
+
+# JUDGING
+- Be lenient. Accept clear near-misses: "lab" = Labrador Retriever, "shepherd" = German Shepherd, "corgi" = Welsh Corgi, "frenchie" = French Bulldog, etc.
+- When wrong, always state the correct breed.
+- Warm and encouraging. One or two sentences per turn.
+
+# COMMANDS (NOT answers — do not begin with Correct/Incorrect)
+- "skip" / "I don't know": treat as Incorrect.
+- "what's my score": tell the user their score is on their screen.
+
+# END OF ROUND
+- After the 10th answer, warmly congratulate the user and say the final score is on their screen. Do not state the number yourself.
+- Offer to recap the breeds they missed.
+- Ask if they want another round. The list above will refresh — start over from dog 1.
+
+# STYLE
+Warm, brisk, spoken — never read markdown.`;
+    },
+  },
+};
+
+// ============================================================================
+// Quiz state
+// ============================================================================
+let currentMode = null;
+const quiz = {
+  items: [],
+  nextItems: [],
+  qIndex: 0,
+  score: 0,
+  misses: [],
+  roundOver: false,
+};
+
+function updateScore() {
+  scoreEl.textContent = `${quiz.score} / ${ROUND_SIZE}`;
+  const pct = Math.min(100, (quiz.qIndex / ROUND_SIZE) * 100);
+  progressFill.style.width = pct + "%";
+}
+
+function showCard() {
+  const item = quiz.items[quiz.qIndex];
+  if (!item) return;
+  const view = currentMode.render(item);
+
+  if (view.image) {
+    cardImageWrap.hidden = false;
+    cardImageWrap.classList.toggle("cover", !!currentMode.coverImage);
+    cardImg.src = view.image;
+    cardImg.alt = view.sub || "";
+  } else {
+    cardImageWrap.hidden = true;
+    cardImg.src = "";
+  }
+  cardLabel.textContent = view.label || "";
+  cardLabel.classList.toggle("small", view.labelSize === "small");
+  cardLabel.style.display = view.label ? "" : "none";
+  cardSub.textContent = view.sub
+    ? `${view.sub} · ${quiz.qIndex + 1} of ${ROUND_SIZE}`
+    : `Question ${quiz.qIndex + 1} of ${ROUND_SIZE}`;
+}
+
+function flashCard(kind) {
+  cardEl.classList.remove("flash-good", "flash-bad");
+  void cardEl.offsetWidth;
+  cardEl.classList.add(kind === "good" ? "flash-good" : "flash-bad");
+  setTimeout(() => cardEl.classList.remove("flash-good", "flash-bad"), 700);
+}
+
+// ============================================================================
+// Handle transcript → drive card + score
+// ============================================================================
+function handleAgentText(text) {
+  const lower = text.trim().toLowerCase();
+
+  // A new round starting after results screen.
+  if (quiz.roundOver && /\b(what is the capital of|what country|what breed|this first|the first)\b/.test(lower)) {
+    quiz.items = quiz.nextItems.length ? quiz.nextItems : [];
+    quiz.nextItems = [];
+    quiz.qIndex = 0;
+    quiz.score = 0;
+    quiz.misses = [];
+    quiz.roundOver = false;
+    showCard();
+    updateScore();
+    return;
+  }
+
+  if (quiz.roundOver || quiz.qIndex >= ROUND_SIZE) return;
+
+  const isIncorrect = lower.startsWith("incorrect");
+  const isCorrect = !isIncorrect && lower.startsWith("correct");
+  if (!isCorrect && !isIncorrect) return;
+
+  if (isCorrect) {
+    quiz.score++;
+    flashCard("good");
+  } else {
+    quiz.misses.push(quiz.items[quiz.qIndex]);
+    flashCard("bad");
+  }
+  quiz.qIndex++;
+  updateScore();
+
+  if (quiz.qIndex >= ROUND_SIZE) endRound();
+  else showCard();
+}
+
+async function endRound() {
+  quiz.roundOver = true;
+  cardImageWrap.hidden = true;
+  cardImg.src = "";
+  cardLabel.style.display = "";
+  cardLabel.classList.remove("small");
+  cardLabel.textContent = `${quiz.score} / ${ROUND_SIZE}`;
+  cardSub.textContent = "Round complete · say \"yes\" for another, or end the session";
+  progressFill.style.width = "100%";
+
+  // Pre-fetch next round so a spoken "yes" just works.
+  try {
+    quiz.nextItems = await currentMode.pickRound();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: "session.update",
+        session: {
+          system_prompt: currentMode.buildPrompt(quiz.nextItems),
+          input: { turn_detection: turnDetection, keyterms: currentMode.keyterms(quiz.nextItems) },
+        },
+      }));
+    }
+  } catch (err) {
+    log("system", "Could not load next round: " + err.message, "sys");
+  }
+}
+
+// ============================================================================
+// Mode picker
+// ============================================================================
+document.querySelectorAll(".mode").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    await dataReady;
+    const key = btn.dataset.mode;
+    currentMode = MODES[key];
+    quizTitleEl.textContent = currentMode.title;
+    homeEl.classList.add("hidden");
+    quizEl.classList.remove("hidden");
+    resetQuizUI();
+  });
+});
+
+backBtn.addEventListener("click", () => {
+  hangup();
+  quizEl.classList.add("hidden");
+  homeEl.classList.remove("hidden");
+  logEl.innerHTML = "";
+});
+
+function resetQuizUI() {
+  cardImageWrap.hidden = true;
+  cardImg.src = "";
+  cardLabel.style.display = "";
+  cardLabel.classList.remove("small");
+  cardLabel.textContent = "Ready when you are.";
+  cardSub.textContent = "Press start";
+  scoreEl.textContent = "0 / 10";
+  progressFill.style.width = "0%";
+  logEl.innerHTML = "";
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  setStatus("idle");
+}
+
+// ============================================================================
+// Voice plumbing (audio + WebSocket) — unchanged from v1
+// ============================================================================
+const turnDetection = { vad_threshold: 0.5, min_silence: 1200, max_silence: 4000, interrupt_response: true };
+
+let ws, audioCtx, micStream, micSource, processor;
+let ready = false;
+let nextStartTime = 0;
+const liveSources = new Set();
+
+function log(who, text, cls = "") {
+  const div = document.createElement("div");
+  div.className = "turn " + (cls || who);
+  if (cls === "sys") {
+    div.textContent = text;
+  } else {
+    const w = document.createElement("span");
+    w.className = "who";
+    w.textContent = (who === "agent" ? "Atlas · " : "You · ");
+    div.appendChild(w);
+    div.appendChild(document.createTextNode(text));
+  }
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setStatus(s) { statusEl.textContent = s; }
+
+function pcm16ToBase64(int16) {
+  const bytes = new Uint8Array(int16.buffer);
+  let bin = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+
+function base64ToPcm16(b64) {
+  const raw = atob(b64);
+  const out = new Int16Array(raw.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = raw.charCodeAt(i * 2) | (raw.charCodeAt(i * 2 + 1) << 8);
+  }
+  return out;
+}
+
+function playReplyAudio(b64) {
+  const pcm = base64ToPcm16(b64);
+  const buf = audioCtx.createBuffer(1, pcm.length, RATE);
+  const ch = buf.getChannelData(0);
+  for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  src.connect(audioCtx.destination);
+  const startAt = Math.max(audioCtx.currentTime, nextStartTime);
+  src.start(startAt);
+  src.onended = () => liveSources.delete(src);
+  liveSources.add(src);
+  nextStartTime = startAt + buf.duration;
+}
+
+function flushPlayback() {
+  for (const s of liveSources) {
+    try { s.onended = null; s.stop(0); s.disconnect(); } catch (_) {}
+  }
+  liveSources.clear();
+  nextStartTime = audioCtx.currentTime;
+}
+
+async function startCall() {
+  if (!currentMode) return;
+  startBtn.disabled = true;
+  setStatus("loading round…");
+
+  // Pick the first round (async — may fetch dog images).
+  quiz.items = await currentMode.pickRound();
+  quiz.nextItems = [];
+  quiz.qIndex = 0;
+  quiz.score = 0;
+  quiz.misses = [];
+  quiz.roundOver = false;
+  showCard();
+  updateScore();
+
+  setStatus("requesting mic…");
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true },
+    });
+  } catch (e) {
+    log("system", "Microphone access denied.", "sys");
+    startBtn.disabled = false;
+    return;
+  }
+
+  setStatus("fetching token…");
+  const tokenRes = await fetch("/api/voice-token");
+  if (!tokenRes.ok) {
+    log("system", "Token error: " + await tokenRes.text(), "sys");
+    startBtn.disabled = false;
+    return;
+  }
+  const { token } = await tokenRes.json();
+
+  audioCtx = new AudioContext({ sampleRate: RATE });
+  if (audioCtx.sampleRate !== RATE) {
+    log("system", `Warning: AudioContext gave ${audioCtx.sampleRate} Hz, not ${RATE}. Use Chrome or Edge.`, "sys");
+  }
+
+  setStatus("connecting…");
+  ws = new WebSocket(`wss://agents.assemblyai.com/v1/ws?token=${encodeURIComponent(token)}`);
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({
+      type: "session.update",
+      session: {
+        system_prompt: currentMode.buildPrompt(quiz.items),
+        greeting: currentMode.greeting,
+        output: { voice: "ivy" },
+        input: { turn_detection: turnDetection, keyterms: currentMode.keyterms(quiz.items) },
+      },
+    }));
+  };
+
+  ws.onmessage = (ev) => {
+    let msg;
+    try { msg = JSON.parse(ev.data); } catch { return; }
+
+    if (!ready && msg.session_id && msg.config) {
+      ready = true;
+      setStatus("on the line");
+      stopBtn.disabled = false;
+      startMicCapture();
+      return;
+    }
+
+    if (msg.data && msg.reply_id && !msg.type) {
+      playReplyAudio(msg.data);
+      return;
+    }
+
+    switch (msg.type) {
+      case "session.ready":
+        if (!ready) { ready = true; setStatus("on the line"); stopBtn.disabled = false; startMicCapture(); }
+        break;
+      case "reply.audio":
+        if (msg.data) playReplyAudio(msg.data);
+        break;
+      case "reply.done":
+        if (msg.status === "interrupted") flushPlayback();
+        break;
+      case "input.speech.started":
+        flushPlayback();
+        break;
+      case "transcript.user":
+        if (msg.text) log("user", msg.text);
+        break;
+      case "transcript.agent":
+        if (msg.text) { log("agent", msg.text); handleAgentText(msg.text); }
+        break;
+      case "session.error":
+      case "error":
+        log("system", "Server error: " + (msg.message || msg.code || JSON.stringify(msg)), "sys");
+        break;
+    }
+  };
+
+  ws.onclose = (e) => {
+    ready = false;
+    setStatus("disconnected" + (e.code ? ` (${e.code})` : ""));
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    stopMicCapture();
+  };
+
+  ws.onerror = () => { log("system", "WebSocket error.", "sys"); };
+}
+
+function startMicCapture() {
+  micSource = audioCtx.createMediaStreamSource(micStream);
+  processor = audioCtx.createScriptProcessor(2048, 1, 1);
+  processor.onaudioprocess = (e) => {
+    if (!ready || !ws || ws.readyState !== WebSocket.OPEN) return;
+    const f32 = e.inputBuffer.getChannelData(0);
+    const i16 = new Int16Array(f32.length);
+    for (let i = 0; i < f32.length; i++) {
+      const v = Math.max(-1, Math.min(1, f32[i]));
+      i16[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+    }
+    ws.send(JSON.stringify({ type: "input.audio", audio: pcm16ToBase64(i16) }));
+  };
+  micSource.connect(processor);
+  processor.connect(audioCtx.destination);
+}
+
+function stopMicCapture() {
+  try { processor && processor.disconnect(); } catch (_) {}
+  try { micSource && micSource.disconnect(); } catch (_) {}
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  processor = null; micSource = null;
+}
+
+function hangup() {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+  if (audioCtx) flushPlayback();
+  stopMicCapture();
+  ready = false;
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  setStatus("idle");
+}
+
+startBtn.addEventListener("click", startCall);
+stopBtn.addEventListener("click", hangup);
+</script>
+</body>
+</html>
